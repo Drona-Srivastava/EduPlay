@@ -35,13 +35,13 @@ Releases are available on the [Releases](https://github.com/Drona-Srivastava/Edu
 ##  Development Setup  
 ```bash
 git clone https://github.com/Drona-Srivastava/EduPlay.git
-
+```
 ```bash
 cd EduPlay
-
+```
 ```bash
 npm install
-
+```
 ```bash
 npm start
-
+```
