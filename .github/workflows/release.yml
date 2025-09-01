@@ -1,0 +1,70 @@
+name: Build and Release Electron App
+
+on:
+  push:
+    tags:
+      - "v*" # Runs only when a new version tag is pushed, e.g. v0.1.7
+
+permissions:
+  contents: write # Allows uploading release assets
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest] # macOS, Windows & Linux builds
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20 # Use stable Node.js LTS (Electron supports 18+)
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build for macOS
+        if: matrix.os == 'macos-latest'
+        run: npx electron-builder --mac --publish never
+
+      - name: Build for Windows
+        if: matrix.os == 'windows-latest'
+        run: npx electron-builder --win --publish never
+
+      - name: Build for Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: npx electron-builder --linux AppImage --publish never
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}
+          path: dist/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Debug - List dist files before release
+        run: ls -R dist/
+
+      - name: Upload Release to GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

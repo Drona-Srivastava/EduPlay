@@ -1,0 +1,71 @@
+{
+  "name": "eduplay",
+  "version": "0.1.7",
+  "description": "EduPlay - A Smart Educational Media Player for Students. Watch lectures, auto-generate captions, search transcripts, and ask questions directly from videos.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "publish": "electron-builder -p always",
+    "postinstall": "node copyFFmpeg.js",
+    "release": "npm version patch && git push origin main --follow-tags"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Drona-Srivastava/EduPlay.git"
+  },
+  "dependencies": {
+    "@electron/remote": "^2.1.2",
+    "electron-is-dev": "^3.0.1",
+    "electron-log": "^5.0.1",
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.1.7",
+    "ffmpeg-static": "^5.2.0",
+    "ffprobe-static": "^3.1.0",
+    "fluent-ffmpeg": "^2.1.3",
+    "music-metadata": "^7.14.0",
+    "srt-to-vtt": "^1.1.3",
+    "subtitle": "^4.2.1",
+    "webvtt-parser": "^2.2.0"
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.eduplay.mediaplayer",
+    "productName": "EduPlay",
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "ffmpeg-binaries/",
+        "to": "ffmpeg-binaries/",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": ["nsis"],
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "build/icon.png"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Drona-Srivastava",
+      "repo": "EduPlay",
+      "private": false
+    }
+  }
+}
