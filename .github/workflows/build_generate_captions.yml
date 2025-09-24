@@ -1,0 +1,52 @@
+name: Build EduPlay generate_captions Executable
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build executable
+      run: |
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          pyinstaller --onefile generate_captions.py
+        else
+          pyinstaller --onefile generate_captions.py
+        fi
+
+    - name: Prepare artifact
+      run: |
+        mkdir -p artifact
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          cp dist/generate_captions.exe artifact/
+        elif [ "${{ runner.os }}" == "Linux" ]; then
+          cp dist/generate_captions artifact/
+        else
+          cp dist/generate_captions artifact/
+        fi
+        zip -r generate_captions-${{ matrix.os }}.zip artifact/
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: generate_captions-${{ matrix.os }}
+        path: generate_captions-${{ matrix.os }}.zip

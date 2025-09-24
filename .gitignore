@@ -1,0 +1,24 @@
+# Node dependencies & build
+node_modules/
+dist/
+build/
+
+# Python virtualenv
+.venv/
+myenv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Large binaries you don't want in Git
+*.exe
+*.AppImage
+*.mp4
+*.mkv
+*.zip

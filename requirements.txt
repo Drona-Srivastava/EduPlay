@@ -1,0 +1,6 @@
+openai-whisper
+torch
+tqdm
+numpy
+regex
+requests
