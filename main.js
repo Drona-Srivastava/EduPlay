@@ -345,7 +345,6 @@ ipcMain.handle("open-files", async () => {
     currentFilePath = result.filePaths[0]; // store the chosen file
     console.log("Current file path set:", currentFilePath);
   }
-
   return result.filePaths;
 });
 
@@ -375,12 +374,9 @@ ipcMain.on("generate-captions", () => {
 
   mainWindow.webContents.send("caption-start");
 
-  // Path to the Python script (same dir as main.js)
   const scriptPath = path.join(__dirname, "generate_caption.py");
 
-  if (fs.existsSync(scriptPath)) {
-    mainWindow.webContents.send("caption-path", { scriptPath });
-  } else {
+  if (!fs.existsSync(scriptPath)) {
     mainWindow.webContents.send("no-caption-path", { scriptPath });
     return;
   }
@@ -413,4 +409,10 @@ ipcMain.on("generate-captions", () => {
   py.on("close", (code) => {
     console.log(`Captions process finished with code ${code}`);
   });
+});
+
+let subtitlesManager; // make sure your SubtitlesManager instance is accessible
+
+ipcMain.handle("get-current-subtitle-path", async () => {
+  return subtitlesManager?.lastSuccessfulSubtitle || null;
 });

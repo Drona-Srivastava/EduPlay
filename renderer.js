@@ -92,6 +92,12 @@ const searchInput = document.getElementById("query");
 const leftArrow = document.getElementById("arrow-left");
 const rightArrow = document.getElementById("arrow-right");
 const searchCounter = document.getElementById("search-counter");
+const aiButton = document.getElementById("ask-ai");
+const aiPopup = document.getElementById("ai-chat-popup");
+const closeChat = document.getElementById("close-ai-chat");
+const sendBtn = document.getElementById("send-ai");
+const aiInput = document.getElementById("ai-input");
+const aiBody = document.getElementById("ai-chat-body");
 
 document.addEventListener("DOMContentLoaded", () => {
   const speedToggle = document.getElementById("speed-toggle");
@@ -1371,6 +1377,85 @@ document.addEventListener("DOMContentLoaded", async () => {
     hardwareAcceleration.toggle(hardwareAcceleration.isEnabled());
   }
 });
+
+// Use the global flag set by subtitles.js
+let subtitlesReady = window.subtitlesReady || false;
+
+// Keep checking if subtitles become ready
+const subtitlesWatcher = setInterval(() => {
+  if (window.subtitlesReady) {
+    subtitlesReady = true;
+    console.log("🧠 Subtitles context confirmed ready for AI.");
+    clearInterval(subtitlesWatcher);
+  }
+}, 500);
+
+aiButton.addEventListener("click", () => {
+  aiPopup.classList.toggle("visible");
+});
+
+closeChat.addEventListener("click", () => {
+  aiPopup.classList.remove("visible");
+});
+
+sendBtn.addEventListener("click", sendMessage);
+aiInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
+
+async function sendMessage() {
+  const text = aiInput.value.trim();
+  if (!text) return;
+
+  // Check if subtitles are ready
+  if (!subtitlesReady) {
+    const warnMsg = document.createElement("div");
+    warnMsg.className = "ai-message ai-bot";
+    warnMsg.textContent =
+      "⚠️ Please wait — subtitles are still being processed by AI.";
+    aiBody.appendChild(warnMsg);
+    aiBody.scrollTop = aiBody.scrollHeight;
+    return;
+  }
+
+  // Display user message
+  const userMsg = document.createElement("div");
+  userMsg.className = "ai-message ai-user";
+  userMsg.textContent = text;
+  aiBody.appendChild(userMsg);
+  aiInput.value = "";
+
+  // Display placeholder
+  const botMsg = document.createElement("div");
+  botMsg.className = "ai-message ai-bot";
+  botMsg.textContent = "Thinking...";
+  aiBody.appendChild(botMsg);
+
+  aiBody.scrollTop = aiBody.scrollHeight;
+
+  try {
+    console.log("🧠 Sending question to AI backend:", text);
+    const res = await fetch("http://localhost:3000/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: text }),
+    });
+
+    const data = await res.json();
+    console.log("🤖 AI Answer:", data.answer);
+
+    botMsg.textContent =
+      data.answer && data.answer.trim()
+        ? data.answer
+        : "⚠️ Hmm, I couldn’t find an answer for that.";
+  } catch (error) {
+    console.error("🚨 AI request failed:", error);
+    botMsg.textContent =
+      "⚠️ Error: Couldn’t reach the AI server. Make sure it's running.";
+  }
+
+  aiBody.scrollTop = aiBody.scrollHeight;
+}
 
 // Drag and drop support
 document.addEventListener("dragover", (e) => {

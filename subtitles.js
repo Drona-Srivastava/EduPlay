@@ -1404,7 +1404,7 @@ class SubtitlesManager {
   }
 
   async setActiveSubtitle(filePath) {
-    // First disable all tracks
+    // Disable any existing subtitle tracks
     this.disableAllTextTracks();
     this.activeTrack = null;
 
@@ -1417,12 +1417,12 @@ class SubtitlesManager {
       );
 
       if (matchingTrack) {
-        setTimeout(() => {
+        setTimeout(async () => {
           this.disableAllTextTracks();
           matchingTrack.track.mode = "showing";
           this.activeTrack = matchingTrack.track;
 
-          // Update the last used language
+          // Update language + state
           this.lastUsedLanguage = matchingTrack.srclang;
           this.globalSubtitleEnabled = true;
           this.lastSuccessfulSubtitle = filePath;
@@ -1439,13 +1439,44 @@ class SubtitlesManager {
             }
           }
 
-          if (this.subtitleDelay !== 0) {
-            this.applySubtitleDelay();
-          }
-
+          if (this.subtitleDelay !== 0) this.applySubtitleDelay();
           this.saveSubtitleState();
           this.updateSubtitleMenu();
-        }, 100);
+          try {
+            const fs = require("fs");
+            if (!fs.existsSync(filePath)) {
+              console.warn("⚠️ Subtitle file not found:", filePath);
+              return;
+            }
+
+            const subtitleText = fs.readFileSync(filePath, "utf-8").trim();
+            if (!subtitleText) {
+              console.warn("⚠️ Subtitle file is empty!");
+              return;
+            }
+
+            console.log("🧠 Sending subtitles to AI context...");
+            const response = await fetch("http://127.0.0.1:3000/ask/init", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ subtitles: subtitleText }),
+            });
+
+            const data = await response.json();
+            if (data?.message) {
+              console.log(
+                "📄 Subtitle text preview:\n",
+                subtitleText.slice(0, 200)
+              );
+              console.log("✅ AI context updated:", data.message);
+              window.subtitlesReady = true; // 🚀 Global flag for AI chat
+            } else {
+              console.warn("⚠️ Unexpected AI response:", data);
+            }
+          } catch (error) {
+            console.error("❌ Failed to send subtitles to AI:", error);
+          }
+        }, 150);
       }
     } else {
       this.globalSubtitleEnabled = false;
