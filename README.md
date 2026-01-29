@@ -23,7 +23,6 @@
 - [ ] Multi-language caption support  
 - [ ] Offline LLM for on-device Q&A  
 - [ ] Highlight and save key lecture clips  
-- [ ] Cloud sync for notes and bookmarks
 
 ---
 
@@ -41,13 +40,28 @@ npm install
 ```
 
 ```bash
-npm start
+pip install -r requirement.txt
+```
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull phi3
 ```
 
 ```bash
-npm install --only=dev
+ollama serve
 ```
+
+## To Verify setup
 ```bash
-pip intall -r requirement.txt
+curl http://127.0.0.1:11434/
 ```
+
+```bash
+node server.js
+```
+
+```bash
+npm start
+```
+
 
