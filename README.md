@@ -53,6 +53,11 @@ ollama pull phi3
 ollama serve
 ```
 
+```bash
+If following error occurs, ignore and proceed with further steps
+Error: listen tcp 127.0.0.1:11434: bind: address already in use
+```
+
 ## To Verify setup
 ```bash
 curl http://127.0.0.1:11434/
@@ -65,6 +70,7 @@ node server.js
 ```bash
 npm start
 ```
+
 
 
 
