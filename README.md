@@ -27,11 +27,6 @@
 
 ---
 
-##  Downloads  
-Releases are available on the [Releases](https://github.com/Drona-Srivastava/EduPlay/releases) page.
-
----
-
 ##  Development Setup  
 ```bash
 git clone https://github.com/Drona-Srivastava/EduPlay.git
@@ -55,3 +50,4 @@ npm install --only=dev
 ```bash
 pip intall -r requirement.txt
 ```
+
