@@ -3,16 +3,18 @@ import whisper
 import os
 import torch
 import gc
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 
 def clear_vram():
-    print("🧹 Clearing GPU memory...", flush=True)
+    print("Clearing GPU memory...", flush=True)
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
         torch.cuda.synchronize()
-        print("✅ GPU cache cleared successfully.", flush=True)
+        print("GPU cache cleared successfully.", flush=True)
     else:
-        print("⚠️ No CUDA device detected.", flush=True)
+        print("No CUDA device detected.", flush=True)
 
 def generate_captions(video_path):
     print("STATUS: Got video file ✅", flush=True)

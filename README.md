@@ -37,6 +37,7 @@ cd EduPlay
 
 ```bash
 npm install
+npm install electron
 ```
 
 ```bash
@@ -70,7 +71,3 @@ node server.js
 ```bash
 npm start
 ```
-
-
-
-
