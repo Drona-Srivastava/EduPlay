@@ -17,7 +17,7 @@ def clear_vram():
         print("No CUDA device detected.", flush=True)
 
 def generate_captions(video_path):
-    print("STATUS: Got video file ✅", flush=True)
+    print("STATUS: Got video file", flush=True)
 
     # Choose fastest available model
     model_size = "base"  # or "small", "medium", "large" for more accuracy
