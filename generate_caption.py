@@ -30,7 +30,7 @@ def generate_captions(video_path):
     result = model.transcribe(
         video_path,
         verbose=False,
-        task="translate",  # 👈 Force English translation
+        #task="translate",    Force English translation
         language=None      # Auto-detect input language
     )
 

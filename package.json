@@ -37,14 +37,14 @@
     "ffprobe-static": "^3.1.0",
     "fluent-ffmpeg": "^2.1.3",
     "langchain": "^1.0.2",
-    "music-metadata": "^7.14.0",
+    "music-metadata": "^11.14.0",
     "node-fetch": "^3.3.2",
     "openai": "^6.8.0",
     "srt-to-vtt": "^1.1.3"
   },
   "devDependencies": {
-    "electron": "^28.3.3",
-    "electron-builder": "^24.13.3"
+    "electron": "^43.1.1",
+    "electron-builder": "^26.15.3"
   },
   "build": {
     "appId": "com.eduplay.mediaplayer",
@@ -110,8 +110,8 @@
       "icon": "meta/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist"
+      "entitlements": "meta/entitlements.mac.plist",
+      "entitlementsInherit": "meta/entitlements.mac.plist"
     },
     "linux": {
       "target": [
