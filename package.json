@@ -76,13 +76,6 @@
     ],
     "extraResources": [
       {
-        "from": "python_dist/",
-        "to": "python_dist/",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
         "from": "meta/",
         "to": "meta/",
         "filter": [
