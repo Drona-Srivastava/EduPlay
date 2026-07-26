@@ -36,6 +36,18 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build bundled Python environment
+        run: |
+          python -m venv .eduplay-python
+          .eduplay-python/bin/python -m pip install --upgrade pip
+          .eduplay-python/bin/python -m pip install -r requirements.txt
+        shell: bash
+
       - name: Syntax-check JavaScript sources
         run: |
           node --check main.js
@@ -82,6 +94,17 @@ jobs:
 
       - name: Install Node dependencies
         run: npm ci
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build bundled Python environment
+        run: |
+          python -m venv .eduplay-python
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
 
       - name: Build package
         run: npm run ${{ matrix.script }} -- --publish never

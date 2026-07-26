@@ -37,6 +37,31 @@ let currentFilePath = null;
 let captionsPath = null;
 let fileToOpen = null;
 
+function getPackagedPythonExecutable() {
+  const basePath = app.isPackaged
+    ? path.join(process.resourcesPath, ".eduplay-python")
+    : path.join(__dirname, ".eduplay-python");
+
+  if (process.platform === "win32") {
+    return path.join(basePath, "Scripts", "python.exe");
+  }
+
+  return path.join(basePath, "bin", "python3");
+}
+
+function resolvePythonExecutable() {
+  const packagedPython = getPackagedPythonExecutable();
+  if (fs.existsSync(packagedPython)) {
+    return packagedPython;
+  }
+
+  if (process.platform === "win32") {
+    return "python";
+  }
+
+  return "python3";
+}
+
 // Handle files opened through OS
 function handleFileOpen(event, filePath) {
   event?.preventDefault();
@@ -384,7 +409,10 @@ ipcMain.on("generate-captions", () => {
   }
 
   // Run Python with the script + video path
-  const py = spawn("python3", [scriptPath, currentFilePath], { shell: false });
+  const pythonExecutable = resolvePythonExecutable();
+  const py = spawn(pythonExecutable, [scriptPath, currentFilePath], {
+    shell: false,
+  });
 
   py.stdout.on("data", (data) => {
     const msg = data.toString().trim();
