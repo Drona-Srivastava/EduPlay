@@ -374,7 +374,9 @@ ipcMain.on("generate-captions", () => {
 
   mainWindow.webContents.send("caption-start");
 
-  const scriptPath = path.join(__dirname, "generate_caption.py");
+  const scriptPath = app.isPackaged
+    ? path.join(process.resourcesPath, "generate_caption.py")
+    : path.join(__dirname, "generate_caption.py");
 
   if (!fs.existsSync(scriptPath)) {
     mainWindow.webContents.send("no-caption-path", { scriptPath });

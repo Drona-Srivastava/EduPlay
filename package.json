@@ -83,6 +83,10 @@
         ]
       },
       {
+        "from": "generate_caption.py",
+        "to": "generate_caption.py"
+      },
+      {
         "from": "ffmpeg-binaries/",
         "to": "ffmpeg-binaries/",
         "filter": [
