@@ -6,6 +6,8 @@
 
 **EduPlay** is a minimalist, student-focused media player built to make learning from video lectures effortless. Powered by AI-generated captions, transcript search, and a Q&A assistant, EduPlay takes video-based study to the next level.
 
+The desktop releases bundle the Whisper/PyTorch captioning environment, so end users do not need to install Python or Whisper manually.
+
 ---
 
 ##  Features  
@@ -71,3 +73,29 @@ node server.js
 ```bash
 npm start
 ```
+
+##  Packaging for Release
+Use the following commands on the matching target OS to build distributables:
+
+```bash
+npm ci
+```
+
+```bash
+npm run dist:linux
+```
+
+```bash
+npm run dist:win
+```
+
+```bash
+npm run dist:mac
+```
+
+Build outputs are written to:
+- `dist/linux` for Linux AppImage builds
+- `dist/win` for Windows `.exe` installers
+- `dist/mac` for macOS `.dmg` installers
+
+If you are building release artifacts, run the matching command on Linux, Windows, and macOS, or let the GitHub release workflow build each platform in CI.

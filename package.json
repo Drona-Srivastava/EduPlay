@@ -59,6 +59,7 @@
     "files": [
       "main.js",
       "renderer.js",
+      "server.js",
       "index.html",
       "menu-template.js",
       "release-notes.js",
