@@ -46,7 +46,12 @@ function getPackagedPythonExecutable() {
     return path.join(basePath, "Scripts", "python.exe");
   }
 
-  return path.join(basePath, "bin", "python3");
+  const python3Path = path.join(basePath, "bin", "python3");
+  if (fs.existsSync(python3Path)) {
+    return python3Path;
+  }
+
+  return path.join(basePath, "bin", "python");
 }
 
 function resolvePythonExecutable() {
@@ -59,7 +64,11 @@ function resolvePythonExecutable() {
     return "python";
   }
 
-  return "python3";
+  if (fs.existsSync("/usr/bin/python3") || fs.existsSync("/usr/local/bin/python3")) {
+    return "python3";
+  }
+
+  return "python";
 }
 
 // Handle files opened through OS
@@ -410,8 +419,17 @@ ipcMain.on("generate-captions", () => {
 
   // Run Python with the script + video path
   const pythonExecutable = resolvePythonExecutable();
+  console.log("Using Python executable:", pythonExecutable);
+  console.log("Using caption script:", scriptPath);
   const py = spawn(pythonExecutable, [scriptPath, currentFilePath], {
     shell: false,
+  });
+
+  py.on("error", (error) => {
+    console.error("Failed to start caption generator:", error);
+    mainWindow.webContents.send("caption-status", {
+      status: `Failed to start caption generator: ${error.message}`,
+    });
   });
 
   py.stdout.on("data", (data) => {
