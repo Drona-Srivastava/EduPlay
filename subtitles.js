@@ -1,4 +1,5 @@
 const { ipcRenderer } = require("electron");
+const { parseSrt } = require("./lectureContext");
 const fs = require("fs").promises;
 const srt2vtt = require("srt-to-vtt");
 const { createReadStream } = require("fs");
@@ -1456,10 +1457,13 @@ class SubtitlesManager {
             }
 
             console.log("🧠 Sending subtitles to AI context...");
+            const segments = parseSrt(subtitleText);
+            window.activeLectureSegments = segments;
+            window.activeLectureSubtitlePath = filePath;
             const response = await fetch("http://127.0.0.1:3000/ask/init", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ subtitles: subtitleText }),
+              body: JSON.stringify({ subtitles: segments, videoPath: this.currentVideoPath }),
             });
 
             const data = await response.json();

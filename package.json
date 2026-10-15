@@ -10,6 +10,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron --ozone-platform=x11 --force-device-scale-factor=1.0 .",
+    "test": "node --test",
     "build": "electron-builder",
     "publish": "electron-builder -p always",
     "postinstall": "node copyFFmpeg.js",
@@ -73,7 +74,11 @@
       "playbackPosition.js",
       "playerUI.js",
       "themes.js",
-      "utils.js"
+      "utils.js",
+      "lectureContext.js",
+      "aiSchemas.js",
+      "analysisStore.js",
+      "sceneDetection.js"
     ],
     "extraResources": [
       {

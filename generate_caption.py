@@ -1,10 +1,18 @@
 import sys
-import whisper
 import os
+import whisper
 import torch
 import gc
 import sys
 sys.stdout.reconfigure(encoding='utf-8')
+
+# Whisper invokes FFmpeg by executable name when decoding audio. EduPlay supplies
+# a local copy beside this script (or passes its packaged resource path).
+ffmpeg_directory = os.environ.get("EDUPLAY_FFMPEG_DIR") or os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "ffmpeg-binaries"
+)
+if os.path.isdir(ffmpeg_directory):
+    os.environ["PATH"] = ffmpeg_directory + os.pathsep + os.environ.get("PATH", "")
 
 def clear_vram():
     print("Clearing GPU memory...", flush=True)

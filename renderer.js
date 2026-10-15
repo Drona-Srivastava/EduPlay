@@ -98,6 +98,22 @@ const closeChat = document.getElementById("close-ai-chat");
 const sendBtn = document.getElementById("send-ai");
 const aiInput = document.getElementById("ai-input");
 const aiBody = document.getElementById("ai-chat-body");
+const learningPopup = document.getElementById("learning-popup");
+const learningContent = document.getElementById("learning-content");
+const learningStatus = document.getElementById("learning-status");
+const learningCacheStatus = document.getElementById("learning-cache-status");
+const learningTabs = Array.from(document.querySelectorAll(".learning-tab"));
+const textModelInput = document.getElementById("learning-text-model");
+const visionModelInput = document.getElementById("learning-vision-model");
+textModelInput.value = store.get("learningTextModel", "phi3");
+visionModelInput.value = store.get("learningVisionModel", "qwen2.5vl:3b");
+textModelInput.addEventListener("change", () => store.set("learningTextModel", textModelInput.value.trim() || "phi3"));
+visionModelInput.addEventListener("change", () => store.set("learningVisionModel", visionModelInput.value.trim() || "qwen2.5vl:3b"));
+let activeMediaPath = null;
+let activeLearningTab = "flashcards";
+let learningAbortController = null;
+let currentFlashcards = [];
+let currentStoryboard = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   const speedToggle = document.getElementById("speed-toggle");
@@ -953,6 +969,17 @@ async function playFile(filePath) {
 
   const existingDialogs = document.querySelectorAll(".resume-dialog");
   existingDialogs.forEach((dialog) => dialog.remove());
+  if (learningAbortController) cancelLearning();
+  activeMediaPath = filePath;
+  window.subtitlesReady = false;
+  window.activeLectureSegments = [];
+  learningContent.replaceChildren();
+  currentFlashcards = [];
+  currentStoryboard = [];
+  currentStoryboardArtifactDirectory = null;
+  learningStatus.textContent = "Load a transcript to create learning materials.";
+  learningCacheStatus.textContent = "";
+  ipcRenderer.invoke("set-active-media-path", filePath).catch((error) => console.warn("Unable to update active media path:", error));
 
   mediaPlayer.removeAttribute("src");
   mediaPlayer.load();
@@ -1378,18 +1405,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// Use the global flag set by subtitles.js
-let subtitlesReady = window.subtitlesReady || false;
-
-// Keep checking if subtitles become ready
-const subtitlesWatcher = setInterval(() => {
-  if (window.subtitlesReady) {
-    subtitlesReady = true;
-    console.log("🧠 Subtitles context confirmed ready for AI.");
-    clearInterval(subtitlesWatcher);
-  }
-}, 500);
-
 aiButton.addEventListener("click", () => {
   aiPopup.classList.toggle("visible");
 });
@@ -1408,7 +1423,7 @@ async function sendMessage() {
   if (!text) return;
 
   // Check if subtitles are ready
-  if (!subtitlesReady) {
+  if (!window.subtitlesReady) {
     const warnMsg = document.createElement("div");
     warnMsg.className = "ai-message ai-bot";
     warnMsg.textContent =
@@ -1435,26 +1450,215 @@ async function sendMessage() {
 
   try {
     console.log("🧠 Sending question to AI backend:", text);
-    const res = await fetch("http://localhost:3000/ask", {
+    const res = await fetch("http://127.0.0.1:3000/ask", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: text }),
+      body: JSON.stringify({ question: text, videoPath: activeMediaPath, model: selectedTextModel() }),
     });
 
     const data = await res.json();
-    console.log("🤖 AI Answer:", data.answer);
-
-    botMsg.textContent =
-      data.answer && data.answer.trim()
-        ? data.answer
-        : "⚠️ Hmm, I couldn’t find an answer for that.";
+    if (!res.ok) {
+      botMsg.textContent = `⚠️ ${data.error || `AI request failed (${res.status}).`}`;
+    } else {
+      console.log("🤖 AI Answer:", data.answer);
+      botMsg.textContent =
+        data.answer && data.answer.trim()
+          ? data.answer
+          : "⚠️ The AI returned an empty answer. Check that this video has a loaded transcript.";
+    }
   } catch (error) {
     console.error("🚨 AI request failed:", error);
-    botMsg.textContent =
-      "⚠️ Error: Couldn’t reach the AI server. Make sure it's running.";
+    botMsg.textContent = `⚠️ Couldn’t reach the AI server: ${error.message}`;
   }
 
   aiBody.scrollTop = aiBody.scrollHeight;
+}
+
+document.getElementById("open-learning").addEventListener("click", () => {
+  learningPopup.classList.toggle("visible");
+  learningPopup.classList.remove("hidden");
+  if (learningPopup.classList.contains("visible")) refreshLearningModelStatus();
+});
+document.getElementById("close-learning").addEventListener("click", () => learningPopup.classList.remove("visible"));
+learningTabs.forEach((tab) => tab.addEventListener("click", () => {
+  activeLearningTab = tab.dataset.learningTab;
+  learningTabs.forEach((entry) => entry.classList.toggle("active", entry === tab));
+  document.getElementById("generate-flashcards").classList.toggle("hidden", activeLearningTab !== "flashcards");
+  document.getElementById("generate-storyboard").classList.toggle("hidden", activeLearningTab !== "storyboard");
+  renderLearningContent();
+}));
+document.getElementById("generate-flashcards").addEventListener("click", generateFlashcards);
+document.getElementById("generate-storyboard").addEventListener("click", generateStoryboard);
+document.getElementById("cancel-learning").addEventListener("click", cancelLearning);
+
+function currentLectureSegments() {
+  return Array.isArray(window.activeLectureSegments) ? window.activeLectureSegments : [];
+}
+
+async function refreshLearningModelStatus() {
+  try {
+    const response = await fetch("http://127.0.0.1:3000/learning/config");
+    const config = await response.json();
+    if (!config.available) learningStatus.textContent = "Ollama is not running. Start Ollama to generate learning materials.";
+    else {
+      textModelInput.placeholder = `Installed: ${(config.installedModels || []).slice(0, 3).join(", ") || "none"}`;
+      visionModelInput.placeholder = `Installed: ${(config.installedModels || []).filter((name) => /vision|vl|gemma3/i.test(name)).slice(0, 3).join(", ") || "none"}`;
+    }
+  } catch (_) { learningStatus.textContent = "EduPlay’s local AI service is unavailable. Restart the app and try again."; }
+}
+
+function learningRequestContext() {
+  const segments = currentLectureSegments();
+  if (!activeMediaPath || !segments.length) throw new Error("Select a media file with an active timestamped transcript first.");
+  return { videoPath: activeMediaPath, segments };
+}
+
+function selectedTextModel() { return textModelInput.value.trim() || "phi3"; }
+function selectedVisionModel() { return visionModelInput.value.trim() || "qwen2.5vl:3b"; }
+
+async function generateFlashcards() {
+  let requestPath = activeMediaPath;
+  try {
+    const context = learningRequestContext();
+    requestPath = context.videoPath;
+    setLearningBusy(true, "Generating flashcards from the lecture transcript…");
+    const response = await fetch("http://127.0.0.1:3000/learning/flashcards", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...context, model: selectedTextModel() }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Flashcard generation failed.");
+    if (activeMediaPath !== requestPath) return;
+    currentFlashcards = data.flashcards || [];
+    learningCacheStatus.textContent = data.cached ? "Saved result" : "Generated and saved";
+    learningStatus.textContent = `${currentFlashcards.length} flashcards ready. Reveal an answer, then mark your recall.`;
+    renderLearningContent();
+  } catch (error) { if (activeMediaPath === requestPath) learningStatus.textContent = error.message; }
+  finally { setLearningBusy(false); }
+}
+
+async function generateStoryboard() {
+  let requestPath = activeMediaPath;
+  try {
+    const context = learningRequestContext();
+    requestPath = context.videoPath;
+    if (!Number.isFinite(mediaPlayer.duration) || mediaPlayer.videoWidth === 0) throw new Error("Open a video and wait for it to load before generating a storyboard.");
+    learningAbortController = new AbortController();
+    setLearningBusy(true, "Detecting meaningful scene changes…");
+    const response = await fetch("http://127.0.0.1:3000/learning/storyboard", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...context, duration: mediaPlayer.duration, model: selectedVisionModel() }),
+      signal: learningAbortController.signal,
+    });
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let pending = "";
+    let result = null;
+    while (true) {
+      const { value, done } = await reader.read();
+      pending += decoder.decode(value || new Uint8Array(), { stream: !done });
+      const lines = pending.split(/\r?\n/);
+      pending = lines.pop() || "";
+      for (const line of lines) consumeStoryboardEvent(line, (value) => { result = value; });
+      if (done) break;
+    }
+    if (pending.trim()) consumeStoryboardEvent(pending, (value) => { result = value; });
+    if (!response.ok) throw new Error(result?.error || "Storyboard generation failed.");
+    if (!result) throw new Error("Storyboard service returned no result.");
+    if (result.error) throw new Error(result.error);
+    if (activeMediaPath !== requestPath) return;
+    currentStoryboard = result.storyboard || [];
+    currentStoryboardArtifactDirectory = result.artifactDirectory;
+    learningCacheStatus.textContent = result.cached ? "Saved result" : "Generated and saved";
+    learningStatus.textContent = `${currentStoryboard.length} storyboard moments ready.`;
+    renderLearningContent();
+  } catch (error) {
+    if (activeMediaPath === requestPath) learningStatus.textContent = error.name === "AbortError" ? "Storyboard generation cancelled." : error.message;
+  } finally { learningAbortController = null; setLearningBusy(false); }
+}
+
+let currentStoryboardArtifactDirectory = null;
+function consumeStoryboardEvent(line, onResult) {
+  try {
+    const value = JSON.parse(line);
+    if (value.type === "progress") {
+      const stage = value.stage === "detecting-scenes" ? `Detecting scenes (${value.candidateCount} candidates)…` : value.stage === "extracting-frames" ? `Extracting frame ${value.completed}/${value.total}…` : value.stage === "analyzing-frames" ? `Understanding frame ${value.completed}/${value.total}…` : "Processing storyboard…";
+      learningStatus.textContent = stage;
+    } else onResult(value);
+  } catch (_) { /* Ignore partial or malformed progress records. */ }
+}
+
+async function cancelLearning() {
+  if (!learningAbortController) return;
+  try { await fetch("http://127.0.0.1:3000/learning/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ videoPath: activeMediaPath }) }); }
+  catch (_) { /* Request abort below still stops UI work. */ }
+  learningAbortController.abort();
+}
+
+function setLearningBusy(busy, message) {
+  document.getElementById("cancel-learning").classList.toggle("hidden", !learningAbortController);
+  document.getElementById("generate-flashcards").disabled = busy;
+  document.getElementById("generate-storyboard").disabled = busy;
+  if (message) learningStatus.textContent = message;
+}
+
+function renderLearningContent() {
+  learningContent.replaceChildren();
+  if (activeLearningTab === "flashcards") {
+    currentFlashcards.forEach((card) => {
+      const article = document.createElement("article");
+      article.className = "learning-card flashcard";
+      const question = document.createElement("h3"); question.textContent = card.question;
+      const reveal = document.createElement("button"); reveal.textContent = "Reveal answer";
+      const answer = document.createElement("div"); answer.className = "flashcard-answer hidden";
+      const text = document.createElement("p"); text.textContent = card.answer;
+      const excerpt = document.createElement("blockquote"); excerpt.textContent = `Lecture source: “${card.source.excerpt}”`;
+      const jump = document.createElement("button"); jump.textContent = `Jump to ${formatTime(card.source.timestamp)}`;
+      const knew = document.createElement("button"); knew.textContent = "Knew it";
+      const missed = document.createElement("button"); missed.textContent = "Missed it";
+      const feedback = document.createElement("div"); feedback.className = "learning-feedback";
+      feedback.append(knew, missed);
+      answer.append(text, excerpt, jump, feedback);
+      reveal.addEventListener("click", () => { answer.classList.toggle("hidden"); reveal.textContent = answer.classList.contains("hidden") ? "Reveal answer" : "Hide answer"; });
+      jump.addEventListener("click", () => jumpToTimestamp(card.source.timestamp));
+      knew.addEventListener("click", () => saveCardReview(card, "knew"));
+      missed.addEventListener("click", () => saveCardReview(card, "missed"));
+      article.append(question, reveal, answer);
+      learningContent.append(article);
+    });
+    if (!currentFlashcards.length) learningContent.textContent = "Generate flashcards from this video’s transcript.";
+    return;
+  }
+  currentStoryboard.forEach((frame) => {
+    const article = document.createElement("article"); article.className = "learning-card storyboard-card";
+    const image = document.createElement("img"); image.alt = frame.visualDescription;
+    const framePath = path.resolve(currentStoryboardArtifactDirectory || "", frame.imagePath);
+    image.src = require("url").pathToFileURL(framePath).href;
+    const heading = document.createElement("h3"); heading.textContent = frame.topic;
+    const description = document.createElement("p"); description.textContent = frame.visualDescription;
+    const context = document.createElement("p"); context.textContent = frame.contextSummary;
+    const jump = document.createElement("button"); jump.textContent = `Jump to ${formatTime(frame.timestamp)}`;
+    jump.addEventListener("click", () => jumpToTimestamp(frame.timestamp));
+    article.append(image, heading, description, context, jump);
+    learningContent.append(article);
+  });
+  if (!currentStoryboard.length) learningContent.textContent = "Generate a scene-based storyboard with an installed local vision model.";
+}
+
+function jumpToTimestamp(timestamp) {
+  mediaPlayer.currentTime = Math.max(0, Number(timestamp) || 0);
+  mediaPlayer.play().catch(() => {});
+}
+
+async function saveCardReview(card, rating) {
+  card.review = { rating, updatedAt: new Date().toISOString() };
+  try {
+    const response = await fetch("http://127.0.0.1:3000/learning/review", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ videoPath: activeMediaPath, cardId: card.id, rating }),
+    });
+    if (!response.ok) throw new Error("Review could not be saved.");
+    learningStatus.textContent = rating === "knew" ? "Marked as known." : "Marked to review again.";
+  } catch (error) { learningStatus.textContent = error.message; }
 }
 
 // Drag and drop support

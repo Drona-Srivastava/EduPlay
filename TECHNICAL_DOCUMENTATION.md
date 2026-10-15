@@ -1531,5 +1531,15 @@ EduPlay is a sophisticated educational media player that seamlessly integrates m
 5. **Ollama LLM** provides local, privacy-focused AI assistance
 6. **Storage Layer** persists user preferences and playback history
 
+## Learning tools: flashcards and visual storyboard
+
+The desktop main process starts the loopback-only Express service from `server.js`; the same module remains executable directly for development. `subtitles.js` converts the active SRT track into normalized `{id,start,end,text}` cues. `lectureContext.js` provides transcript parsing, fingerprints, and time-window lookup shared by learning endpoints. `analysisStore.js` persists versioned analysis JSON and extracted images in a hidden per-video sidecar, falling back to a user-home cache when the media folder is read-only.
+
+Flashcards are generated on demand through `/learning/flashcards` using the text model selected in the Learning panel (`EDUPLAY_TEXT_MODEL`, default `phi3`). The selected text and vision model names are saved in `electron-store`; the panel shows installed Ollama model names as hints. Output is parsed and checked against the cited timestamped cues before persistence. `/learning/review` stores the learner's “knew it” or “missed it” feedback.
+
+Storyboard generation detects scene changes with FFmpeg, chooses a bounded set of representative times across the lecture, extracts resized JPEG frames, and sends each frame with nearby transcript text to the separately configured vision model (`EDUPLAY_VISION_MODEL`, default `qwen2.5vl:3b`). This vision model must be installed separately in Ollama; no cloud endpoint is used and the model is not packaged with EduPlay. If it is unavailable, storyboard generation returns an actionable error. Processing is sequential and can be cancelled.
+
+Learning artifacts include a schema version, media size and modification time, transcript fingerprint, selected model, and artifact key. A changed transcript, media file, model, or schema invalidates the relevant cached feature. Run `npm test` for the transcript, structured-output, and scene-candidate unit checks.
+
 The architecture is designed for performance, privacy, and extensibility, allowing users to work with media files entirely offline with AI assistance.
 

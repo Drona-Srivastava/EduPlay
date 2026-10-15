@@ -53,6 +53,10 @@ jobs:
           node --check main.js
           node --check renderer.js
           node --check server.js
+          node --check lectureContext.js
+          node --check aiSchemas.js
+          node --check analysisStore.js
+          node --check sceneDetection.js
           node --check copyFFmpeg.js
           node --check menu-template.js
           node --check mediaControl.js
@@ -60,6 +64,9 @@ jobs:
 
       - name: Syntax-check Python caption generator
         run: python -m py_compile generate_caption.py
+
+      - name: Run learning feature unit tests
+        run: npm test
 
   build:
     name: Build ${{ matrix.name }}

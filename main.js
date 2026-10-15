@@ -9,6 +9,7 @@ const createMenuTemplate = require("./menu-template");
 const store = new Store();
 const isHardwareAccelerated = store.get("./hardwareAcceleration", true);
 const { spawn } = require("child_process");
+const { startServer, cancelActiveJobs } = require("./server");
 
 const remoteMain = require("@electron/remote/main");
 const srt2vtt = require("srt-to-vtt");
@@ -69,6 +70,16 @@ function resolvePythonExecutable() {
   }
 
   return "python";
+}
+
+function getFfmpegBinaryDirectory() {
+  const basePath = app.isPackaged
+    ? path.join(process.resourcesPath, "ffmpeg-binaries")
+    : path.join(__dirname, "ffmpeg-binaries");
+  const binaryName = process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg";
+  const binaryPath = path.join(basePath, binaryName);
+
+  return fs.existsSync(binaryPath) ? basePath : null;
 }
 
 // Handle files opened through OS
@@ -206,6 +217,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  startServer();
   createWindow();
 
   // Check for updates after a short delay to ensure connectivity
@@ -219,6 +231,8 @@ app.on("window-all-closed", () => {
     app.quit();
   }
 });
+
+app.on("before-quit", cancelActiveJobs);
 
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
@@ -382,6 +396,11 @@ ipcMain.handle("open-files", async () => {
   return result.filePaths;
 });
 
+ipcMain.handle("set-active-media-path", async (_event, filePath) => {
+  currentFilePath = typeof filePath === "string" ? filePath : null;
+  return true;
+});
+
 ipcMain.handle("open-folder", async () => {
   return dialog.showOpenDialog({
     properties: ["openDirectory"],
@@ -419,10 +438,26 @@ ipcMain.on("generate-captions", () => {
 
   // Run Python with the script + video path
   const pythonExecutable = resolvePythonExecutable();
+  const ffmpegDirectory = getFfmpegBinaryDirectory();
   console.log("Using Python executable:", pythonExecutable);
   console.log("Using caption script:", scriptPath);
+
+  if (!ffmpegDirectory) {
+    const message = "FFmpeg was not found. Reinstall dependencies or restore the ffmpeg-binaries folder.";
+    console.error(message);
+    mainWindow.webContents.send("caption-status", { status: message });
+    return;
+  }
+
+  const pathKey = Object.keys(process.env).find((key) => key.toLowerCase() === "path") || "PATH";
+  const childEnv = {
+    ...process.env,
+    EDUPLAY_FFMPEG_DIR: ffmpegDirectory,
+    [pathKey]: `${ffmpegDirectory}${path.delimiter}${process.env[pathKey] || ""}`,
+  };
   const py = spawn(pythonExecutable, [scriptPath, currentFilePath], {
     shell: false,
+    env: childEnv,
   });
 
   py.on("error", (error) => {

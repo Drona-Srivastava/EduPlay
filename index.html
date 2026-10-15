@@ -300,6 +300,7 @@
                     />
                   </svg>
                 </button>
+                <button class="control-button" id="open-learning" title="Learning tools">Learn</button>
               </div>
             </div>
           </div>
@@ -395,6 +396,28 @@
         <button id="send-ai">Send</button>
       </div>
     </div>
+
+    <section id="learning-popup" aria-label="Learning tools" class="hidden">
+      <header class="learning-header">
+        <div><strong>Learning tools</strong><span id="learning-cache-status"></span></div>
+        <button id="close-learning" title="Close learning tools">✕</button>
+      </header>
+      <nav class="learning-tabs" aria-label="Learning tool tabs">
+        <button class="learning-tab active" data-learning-tab="flashcards">Flashcards</button>
+        <button class="learning-tab" data-learning-tab="storyboard">Storyboard</button>
+      </nav>
+      <div class="learning-models">
+        <label>Text model <input id="learning-text-model" type="text" autocomplete="off" spellcheck="false" /></label>
+        <label>Vision model <input id="learning-vision-model" type="text" autocomplete="off" spellcheck="false" /></label>
+      </div>
+      <div class="learning-toolbar">
+        <button id="generate-flashcards">Generate flashcards</button>
+        <button id="generate-storyboard" class="hidden">Generate storyboard</button>
+        <button id="cancel-learning" class="hidden">Cancel</button>
+      </div>
+      <p id="learning-status" role="status">Load a transcript to create learning materials.</p>
+      <div id="learning-content" class="learning-content"></div>
+    </section>
 
     <script src="renderer.js"></script>
   </body>

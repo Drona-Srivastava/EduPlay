@@ -16,6 +16,8 @@ The desktop releases bundle the Whisper/PyTorch captioning environment, so end u
 -  **In-transcript search** with skip-to-moment functionality  
 -  **Match navigation** with previous/next controls and a result counter (`1/5`)  
 -  **Ask-Video (AI Q&A)** — get instant transcript-based answers  
+-  **AI flashcards** — create source-linked active-recall questions from a lecture transcript
+-  **Pictorial storyboard** — detect scene changes and explain selected frames with a local vision model
 -  **Auto-hide controls** for clean UI that responds to activity  
 -  **Cross-platform builds** for Windows, macOS, and Linux
 
@@ -52,6 +54,12 @@ curl -fsSL https://ollama.com/install.sh | sh
 ollama pull phi3
 ```
 
+To enable local pictorial storyboards, optionally install a vision model:
+
+```bash
+ollama pull qwen2.5vl:3b
+```
+
 ```bash
 ollama serve
 ```
@@ -67,12 +75,12 @@ curl http://127.0.0.1:11434/
 ```
 
 ```bash
-node server.js
-```
-
-```bash
 npm start
 ```
+
+Run `node server.js` only if you want to start the AI backend separately during development; the Electron app starts it automatically.
+
+The desktop app starts its local AI backend automatically. Starting `node server.js` separately is only needed when developing the backend outside Electron. Flashcards use the configured local text model (`EDUPLAY_TEXT_MODEL`, default `phi3`). Storyboards use `EDUPLAY_VISION_MODEL` (default `qwen2.5vl:3b`) and require an installed vision-capable Ollama model. Model downloads are several GB and are not bundled in desktop installers. Learning results are cached in a hidden `.eduplay` folder beside the media file; the cache falls back to the user home directory if that folder cannot be written.
 
 ##  Packaging for Release
 Use the following commands on the matching target OS to build distributables:
