@@ -37,6 +37,8 @@ extras = [
     "docs/submission/revised/EduPlay_Project_Documentation_Report_SDLC.pdf",
     "docs/submission/revised/EduPlay_Workflow_and_Procedure_Guide_SDLC.docx",
     "docs/submission/revised/EduPlay_Workflow_and_Procedure_Guide_SDLC.pdf",
+    "docs/submission/revised/EduPlay_Solo_Demo_Video_Script.docx",
+    "docs/submission/revised/build_solo_demo_script.py",
     "docs/submission/build_documents.py",
     "docs/submission/package_submission.py",
 ]
