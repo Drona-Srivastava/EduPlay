@@ -33,14 +33,24 @@ tracked = subprocess.check_output(
     ["git", "ls-files", "-z"], cwd=ROOT
 ).decode("utf-8").split("\0")
 extras = [
+    "docs/submission/revised/EduPlay_Project_Documentation_Report_SDLC.docx",
+    "docs/submission/revised/EduPlay_Project_Documentation_Report_SDLC.pdf",
+    "docs/submission/revised/EduPlay_Workflow_and_Procedure_Guide_SDLC.docx",
+    "docs/submission/revised/EduPlay_Workflow_and_Procedure_Guide_SDLC.pdf",
+    "docs/submission/build_documents.py",
+    "docs/submission/package_submission.py",
+]
+old_docs = {
     "docs/submission/EduPlay_Project_Documentation_Report.docx",
     "docs/submission/EduPlay_Project_Documentation_Report.pdf",
     "docs/submission/EduPlay_Workflow_and_Procedure_Guide.docx",
     "docs/submission/EduPlay_Workflow_and_Procedure_Guide.pdf",
-    "docs/submission/build_documents.py",
-    "docs/submission/package_submission.py",
-]
-files = sorted({p for p in tracked if p} | set(extras))
+    "docs/submission/revised/EduPlay_Project_Documentation_Report_Revised.docx",
+    "docs/submission/revised/EduPlay_Project_Documentation_Report_Revised.pdf",
+    "docs/submission/revised/EduPlay_Workflow_and_Procedure_Guide_Revised.docx",
+    "docs/submission/revised/EduPlay_Workflow_and_Procedure_Guide_Revised.pdf",
+}
+files = sorted(({p for p in tracked if p} - old_docs) | set(extras))
 with zipfile.ZipFile(OUT, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
     zf.writestr("SUBMISSION_PACKAGE_README.txt", readme)
     for rel in files:

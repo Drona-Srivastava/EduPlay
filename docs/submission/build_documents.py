@@ -9,6 +9,8 @@ from docx.oxml.ns import qn
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(__file__).resolve().parent
+REVISED = OUT / "revised"
+REVISED.mkdir(exist_ok=True)
 NAVY, ORANGE, INK, MUTED = "17324D", "E87524", "263442", "5D6B78"
 PALE, PALE_ORANGE, WHITE = "EEF3F7", "FFF3E8", "FFFFFF"
 DATE_TEXT = "31 October 2026"
@@ -240,6 +242,19 @@ def build_report():
     for x in ["Play common local media with standard controls, speed adjustment, and subtitle tracks.", "Generate timestamped speech captions with Whisper and save an SRT file beside the media.", "Search caption text and jump to matching moments.", "Ask transcript-based questions through a local Ollama text model.", "Generate flashcards with transcript references and timestamps.", "Detect scene changes and explain selected video frames with a local vision model."]:
         bullet(d, x)
     d.add_page_break()
+    heading(d, "SDLC and Development Evolution")
+    d.add_paragraph("EduPlay was developed incrementally through the software development life cycle (SDLC): identify a learning problem, define requirements, choose a familiar and suitable stack, design the data flow, implement features in stages, then test and refine them. The sequence below describes how the project grew from a desktop media player into a local AI-assisted study tool.")
+    make_table(d, ["SDLC stage", "Decision or implementation in EduPlay"], [
+        ("1. Problem identification", "Long lecture recordings take time to review; learners need faster ways to find, understand, and revisit important material."),
+        ("2. Requirements", "Build a desktop app for local media playback, timestamped captions, transcript search, video question answering, flashcards, and visual storyboards."),
+        ("3. Technology selection and design", "Choose Electron because the team was familiar with HTML, CSS, and JavaScript and wanted a desktop app. Use a local Express service, Python Whisper/PyTorch for transcription, FFmpeg for media/frame work, and Ollama for local model inference."),
+        ("4. Player implementation", "Create the Electron media player and its playback/subtitle interface first, establishing the desktop workflow that later AI features extend."),
+        ("5. Transcription and transcript context", "Add Whisper to transcribe media into timed SRT cues. Parse cues into timestamp-and-text segments so later features can use the spoken content and link results to source moments."),
+        ("6. Ask AI and local models", "Connect relevant transcript excerpts to an Ollama text model for video questions. Configure local text/vision models and shape transcript context for longer learning tasks."),
+        ("7. Learning tools and validation", "Implement transcript-grounded flashcards with the text model and frame-plus-transcript storyboards with the vision model; validate structured responses, cache results, and test the workflows."),
+    ], [1.65, 5.0], 8.0)
+    d.add_paragraph("For flashcards, the service samples transcript chunks and expects structured cards tied to transcript cues and times. For storyboards, it selects scene candidates, extracts video frames, and pairs each frame with nearby transcript context before asking the vision model for an explanation. This extends the initial player and Ask AI pipeline with two different model inputs: text-only study cards and image-plus-text scene analysis.")
+    d.add_page_break()
     heading(d, "System Architecture")
     d.add_paragraph("The desktop application separates playback, orchestration, transcription, and local model inference. In the documented local workflow, media and transcript content stay on the user’s computer.")
     make_table(d, ["Layer", "Component", "Responsibility"], [
@@ -314,7 +329,7 @@ result = model.transcribe(
     for x in ["Caption quality depends on audio, language, model size, and available hardware.", "Local models can return incomplete or incorrect content; verify answers against transcript sources.", "Scene detection may miss gradual transitions or select non-instructional animation cuts.", "The repository does not include the paper, dataset, demo recording, or final screenshots.", "Run a complete demo on the target lecture and hardware before final submission."]:
         bullet(d, x)
     d.add_paragraph("Source repository: https://github.com/Drona-Srivastava/EduPlay")
-    path = OUT / "EduPlay_Project_Documentation_Report.docx"
+    path = REVISED / "EduPlay_Project_Documentation_Report_SDLC.docx"
     d.save(path)
     return path
 
@@ -325,6 +340,19 @@ def build_procedure():
     cover(d, "EduPlay Workflow and Procedure Guide", "Step-by-step setup, demonstration, and submission instructions", "WORKFLOW AND SUBMISSION GUIDE")
     heading(d, "How to Use This Guide")
     d.add_paragraph("Use this guide to prepare the application, run a repeatable demonstration, organize project materials, and submit links and supporting documents. Replace every bracketed field. The repository contains no dataset, research paper, or demo video, so supply those items before final submission.")
+    heading(d, "How the Project Came to Be")
+    d.add_paragraph("The team began with a learning problem: reviewing long lecture videos to find a specific explanation is slow. The development followed an incremental SDLC path, with each stage adding a capability to the desktop player:")
+    for title, text_value in [
+        ("Identify the problem.", "Learners needed a practical way to play lecture media, locate spoken topics, and review key ideas without repeatedly scrubbing through an entire recording."),
+        ("Choose the desktop stack.", "A desktop application was selected for direct media-file use. Electron was chosen because the team already knew HTML, CSS, and JavaScript; that familiarity reduced setup time and supported a cross-platform desktop UI."),
+        ("Build the media player.", "Implement the Electron playback window and core controls first, creating the base app that the learning features could extend."),
+        ("Add transcription.", "Integrate Python Whisper to convert speech into an SRT transcript with timestamps. Parse the cues into timed text segments so the application can search them and jump back to the matching video time."),
+        ("Connect Ask AI to the transcript.", "Run a local Ollama text model and provide it with question-relevant transcript excerpts. The model answers from the lecture context, rather than treating the video question as a generic prompt."),
+        ("Prepare local models and learning context.", "Configure a text model for language tasks and a vision model for images. Keep transcript cues structured and timestamped; sample long transcripts for text generation and pair selected frames with nearby transcript context for storyboards."),
+        ("Implement and refine study tools.", "Generate flashcards from transcript segments with source cues, then generate storyboards from selected frames plus transcript context. Validate the returned structure, preserve timestamps, cache results, and test the feature flows."),
+    ]:
+        step(d, title, text_value)
+    d.add_paragraph("This sequence is a project-development narrative, not a claim that every feature was completed in a single uninterrupted phase. The current source shows the resulting architecture and behaviors; the team should add dated milestones if the submission requires a formal development timeline.")
     heading(d, "Submission Links and Project Details")
     link_field(d, "Project source repository:", "https://github.com/Drona-Srivastava/EduPlay")
     link_field(d, "Shared project archive:", "[PASTE DRIVE VIEW LINK AFTER UPLOAD]")
@@ -334,6 +362,7 @@ def build_procedure():
     link_field(d, "Team, institution, and course:", "[INSERT VERIFIED DETAILS]")
     d.add_paragraph("No dataset is included in the repository. Identify the dataset source, owner, license or permission, format, and approximate size. Share only materials the team is allowed to distribute.")
 
+    d.add_page_break()
     heading(d, "Roles and Responsibilities")
     make_table(d, ["Member", "Preparation", "Demo responsibility"], [
         ("[Member 1]", "Confirm objective and speaking order.", "Introduce the team, problem, and project goal."),
@@ -423,7 +452,7 @@ def build_procedure():
     heading(d, "Final Submission Checklist")
     for x in ["The ZIP opens and contains source code, design assets, tests, README, and requested documents.", "The report contains actual code excerpts and screenshots from the working app.", "This guide has working archive, dataset, demo, and paper links or approved access instructions.", "The video includes all team members and a correct explanation of the paper.", "Dataset provenance, license, format, and permission are stated.", "The results table reflects the submitted build and observed tests.", "All bracketed fields are replaced, or marked not applicable with a reason."]:
         bullet(d, x)
-    path = OUT / "EduPlay_Workflow_and_Procedure_Guide.docx"
+    path = REVISED / "EduPlay_Workflow_and_Procedure_Guide_SDLC.docx"
     d.save(path)
     return path
 
